@@ -32,9 +32,9 @@ Este documento define os requisitos para um dashboard de Open Banking desenvolvi
 2. WHEN o Open_Banking_Provider retorna um código de autorização, THE Dashboard SHALL trocar o código por um Access_Token e armazená-lo de forma criptografada, nunca em texto simples.
 3. IF o Consent_Flow falhar ou for cancelado pelo usuário, THEN THE Dashboard SHALL exibir uma mensagem de erro indicando o motivo da falha e disponibilizar a opção de iniciar um novo Consent_Flow.
 4. WHEN o Access_Token estiver a 60 segundos ou menos da expiração, THE Dashboard SHALL renovar o token automaticamente usando o Refresh_Token sem exigir nova autorização do usuário.
-7. IF a renovação automática do Access_Token falhar por motivo transitório (ex.: falha de rede), THEN THE Dashboard SHALL tentar novamente a renovação automática até 3 vezes antes de solicitar ao usuário que inicie um novo Consent_Flow.
-5. THE Dashboard SHALL armazenar o Access_Token de forma criptografada, nunca em texto simples.
-6. IF o Refresh_Token estiver expirado ou for rejeitado pelo Open_Banking_Provider, THEN THE Dashboard SHALL invalidar a sessão atual e solicitar ao usuário que inicie um novo Consent_Flow.
+5. IF a renovação automática do Access_Token falhar por motivo transitório (ex.: falha de rede), THEN THE Dashboard SHALL tentar novamente a renovação automática até 3 vezes antes de solicitar ao usuário que inicie um novo Consent_Flow.
+6. THE Dashboard SHALL armazenar o Access_Token de forma criptografada, nunca em texto simples.
+7. IF o Refresh_Token estiver expirado ou for rejeitado pelo Open_Banking_Provider, THEN THE Dashboard SHALL invalidar a sessão atual e solicitar ao usuário que inicie um novo Consent_Flow.
 
 ---
 
@@ -51,7 +51,7 @@ Este documento define os requisitos para um dashboard de Open Banking desenvolvi
 5. WHEN uma Transaction já existente for retornada novamente, THE Dashboard SHALL atualizar os dados locais sem criar duplicatas, usando o identificador único da Transaction fornecido pelo Open_Banking_Provider.
 6. THE Dashboard SHALL suportar paginação na busca de Transactions, processando todos os resultados disponíveis no Open_Banking_Provider até o limite de 10.000 Transactions por sincronização.
 7. IF o Access_Token utilizado na busca for rejeitado pelo Open_Banking_Provider, THEN THE Dashboard SHALL tentar renovar o token uma vez antes de exibir uma mensagem de erro ao usuário.
-8. IF Open_Banking_Provider tiver mais que 10.000 transactions exibir mensagem indicando que não foram todas as Transactions que foram sincronizadas.
+8. IF o Open_Banking_Provider possuir mais Transactions disponíveis além das 10.000 sincronizadas, THEN THE Dashboard SHALL exibir uma mensagem indicando que a sincronização está incompleta e perguntar ao usuário se ele gostaria de sincronizar mais Transactions.
 
 ---
 
@@ -66,7 +66,7 @@ Este documento define os requisitos para um dashboard de Open Banking desenvolvi
 3. IF a descrição de uma Transaction não corresponder a nenhuma das categorias predefinidas, THEN THE Categorizer SHALL atribuir a Category "Outros" à Transaction.
 4. THE Categorizer SHALL utilizar correspondência de palavras-chave configurável para associar descrições de Transaction a categorias, aplicando a primeira regra correspondente encontrada na ordem de configuração em caso de múltiplas correspondências.
 5. WHEN o usuário corrigir manualmente a Category de uma Transaction, THE Dashboard SHALL persistir a Category corrigida substituindo a Category anterior.
-6. WHILE a Category corrigida manualmente estiver persistida, THE Dashboard SHALL utilizar exclusivamente essa Category em todos os cálculos e exibições relacionados à Transaction.
+6. WHILE a Category corrigida manualmente estiver persistida, THE Dashboard SHALL utilizar exclusivamente essa Category em todos os cálculos e exibições relacionados à Transaction, sem exceções, incluindo caches ou views intermediárias.
 7. WHEN a aplicação é inicializada, THE Categorizer SHALL processar em background todas as Transactions que não possuem Category atribuída e atribuir uma Category a cada uma delas. Antes da atribuição essas Transactions devem mostrar na categoria "Classificando..." e assim que concluida sua atribuição mudar para exibir a categoria atribuida. A tela não deve piscar ou mover o scroll durante essa atualização.
 8. IF o usuário corrigir manualmente a Category de uma Transaction cujo resultado de categorização em background ainda não foi persistido, THEN THE Dashboard SHALL descartar o resultado do background para essa Transaction e utilizar exclusivamente a Category corrigida manualmente.
 
@@ -80,11 +80,12 @@ Este documento define os requisitos para um dashboard de Open Banking desenvolvi
 
 1. WHILE um período estiver selecionado, THE Dashboard SHALL exibir um gráfico de pizza mostrando a distribuição percentual dos gastos por Category, onde cada fatia representa uma Category com seu respectivo nome e percentual visíveis.
 2. WHILE um período estiver selecionado, THE Dashboard SHALL exibir um gráfico de barras verticais mostrando o valor total gasto por Category para o período, ordenado do maior para o menor valor.
-7. A esquerda de cada barra deve-se exibir uma barra pontilhada com o valor do período equivalente anterior para ajudar a entender se está aumentando ou diminuindo.
-3. IF nenhum período estiver selecionado, THEN THE Dashboard SHALL aplicar o mês corrente como período padrão para exibição dos Charts.
-4. WHEN o usuário selecionar uma Category específica no Filter, THE Dashboard SHALL atualizar o gráfico de pizza e o gráfico de barras para exibir apenas os dados da Category selecionada, mantendo o Filter resetável para exibir todas as Categories.
-5. IF nenhuma Transaction existir para o período e Category selecionados, THEN THE Dashboard SHALL exibir uma mensagem indicando ausência de dados para o período e Category selecionados, no lugar de cada Chart afetado.
-6. THE Dashboard SHALL exibir o valor monetário em formato brasileiro (R$ 1.234,56) em qualquer valor monetário exibido na tela, incluindo todos os Charts e resumos textuais, independentemente de Charts estarem visíveis.
+3. A esquerda de cada barra deve-se exibir uma barra pontilhada com o valor do período equivalente anterior para ajudar a entender se está aumentando ou diminuindo.
+4. IF nenhum período estiver selecionado, THEN THE Dashboard SHALL aplicar o mês corrente como período padrão para exibição dos Charts.
+5. WHEN o usuário selecionar uma Category específica no Filter, THE Dashboard SHALL atualizar o gráfico de pizza e o gráfico de barras para exibir apenas os dados da Category selecionada, mantendo o Filter resetável para exibir todas as Categories.
+6. WHEN o usuário resetar o Filter, THE Dashboard SHALL atualizar imediatamente os Charts para exibir todas as Categories.
+7. IF nenhuma Transaction existir para o período e Category selecionados, THEN THE Dashboard SHALL exibir uma mensagem indicando ausência de dados para o período e Category selecionados, no lugar de cada Chart afetado.
+8. THE Dashboard SHALL exibir o valor monetário em formato brasileiro (R$ 1.234,56) em qualquer valor monetário exibido na tela, incluindo todos os Charts e resumos textuais, independentemente de Charts estarem visíveis.
 
 ---
 
@@ -98,7 +99,7 @@ Este documento define os requisitos para um dashboard de Open Banking desenvolvi
 2. WHEN o usuário selecionar a Granularity "mensal", THE Dashboard SHALL agregar as Transactions por mês calendário e exibir um Chart de linha com os totais mensais dos últimos 12 meses calendário anteriores ao mês corrente, inclusive.
 3. WHEN o usuário selecionar a Granularity "semanal", THE Dashboard SHALL agregar as Transactions por semana ISO e exibir um Chart de linha com os totais semanais das últimas 52 semanas ISO anteriores à semana corrente, inclusive.
 4. WHEN o usuário alterar a Granularity, THE Dashboard SHALL atualizar todos os Charts simultaneamente em no máximo 2 segundos sem recarregar a página.
-5. WHEN o usuário selecionar um intervalo de datas personalizado, THE Dashboard SHALL restringir os dados exibidos em todos os Charts às Transactions cujas datas estejam dentro do intervalo selecionado, mantendo a Granularity ativa para agregar os dados dentro desse intervalo.
+5. WHEN o usuário selecionar um intervalo de datas personalizado, THE Dashboard SHALL restringir os dados exibidos em todos os Charts às Transactions cujas datas estejam dentro do intervalo selecionado, substituindo totalmente as janelas fixas de 12 meses e 52 semanas, sem restrição de período mínimo ou máximo além do que o usuário selecionar, mantendo a Granularity ativa para agregar os dados dentro desse intervalo.
 6. IF o intervalo de datas selecionado não contiver nenhuma Transaction, THEN THE Dashboard SHALL exibir uma mensagem indicando que não há dados disponíveis para o período selecionado e ocultar os Charts.
 
 ---
@@ -111,13 +112,13 @@ Este documento define os requisitos para um dashboard de Open Banking desenvolvi
 
 1. THE Dashboard SHALL ser acessível via navegador web sem necessidade de instalação de software adicional pelo usuário.
 2. THE Dashboard SHALL renderizar sem sobreposição de elementos, sem rolagem horizontal e com texto legível.
-7. The Dashboard SHALL ser responsivo de acordo com a tela que está exibindo, ajustando o tamanho dos gráficos e os posicionando em sequencia um abaixo do outro se a tela não for grande o suficiente para exibir lado a lado.
-3. WHEN o usuário acessar o Dashboard sem um Access_Token válido, THE Dashboard SHALL redirecionar o usuário para o Consent_Flow automaticamente.
-4. WHILE os dados estiverem sendo buscados do Open_Banking_Provider, THE Dashboard SHALL exibir um indicador de carregamento visível na tela que não impeça a navegação.
-7. WHEN Dados forem baixados do Open_Banking_Provider, eles devem ser armazenados em um banco de dados server-side em um formato que facilite futuras consultas.
-8. THE Dashbaord SHALL exibir na tela os dados a medida que eles forem baixados, sem aguardar o carregamento de todas as transações.
-5. THE Dashboard SHALL exibir na tela inicial um resumo com: saldo total, total de créditos e total de débitos, usando o período dos últimos 30 dias como padrão quando nenhum período for selecionado pelo usuário.
-6. IF o período selecionado não contiver Transactions, THEN THE Dashboard SHALL exibir o resumo com os valores zerados e uma mensagem indicando ausência de dados para o período.
+3. The Dashboard SHALL ser responsivo de acordo com a tela que está exibindo, ajustando o tamanho dos gráficos e os posicionando em sequencia um abaixo do outro se a tela não for grande o suficiente para exibir lado a lado.
+4. WHEN o usuário acessar o Dashboard sem um Access_Token válido, THE Dashboard SHALL redirecionar o usuário para o Consent_Flow automaticamente.
+5. WHILE os dados estiverem sendo buscados do Open_Banking_Provider, THE Dashboard SHALL exibir um indicador de carregamento visível na tela que não impeça a navegação.
+6. WHEN Dados forem baixados do Open_Banking_Provider, eles devem ser armazenados em um banco de dados server-side em um formato que facilite futuras consultas.
+7. THE Dashbaord SHALL exibir na tela os dados a medida que eles forem baixados, sem aguardar o carregamento de todas as transações.
+8. THE Dashboard SHALL exibir na tela inicial um resumo com: saldo total, total de créditos e total de débitos, usando o período dos últimos 30 dias como padrão quando nenhum período for selecionado pelo usuário.
+9. IF o período selecionado não contiver Transactions, THEN THE Dashboard SHALL exibir o resumo com os valores zerados e uma mensagem indicando ausência de dados para o período.
 
 ---
 
